@@ -82,13 +82,13 @@ Each compound record contains:
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/chemagent.git
-cd chemagent
+git clone https://github.com/Shreyaspatel12/genAI.git
+cd genAI
 
 # Create virtual environment
-python -m venv menv
-source menv/bin/activate  # Mac/Linux
-# menv\Scripts\activate   # Windows
+python -m venv venv
+source venv/bin/activate  # Mac/Linux
+# venv\Scripts\activate   # Windows
 
 # Install dependencies
 pip install -r requirements.txt
