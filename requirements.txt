@@ -1,0 +1,21 @@
+# Core
+requests>=2.31
+httpx>=0.27
+python-dotenv>=1.0
+
+# Agent framework
+langchain>=0.3
+langchain-openai>=0.2
+langgraph>=0.2
+
+# Chemistry
+rdkit-pypi>=2022.9
+pubchempy>=1.0
+
+# Data / validation
+pydantic>=2.0
+pandas>=2.0
+tqdm>=4.66
+
+# Bio / literature
+biopython>=1.83
