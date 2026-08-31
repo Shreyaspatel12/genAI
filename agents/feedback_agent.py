@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 logger = logging.getLogger(__name__)
 
-# ── Protein target map ─────────────────────────────────────────────────────
+# Protein target map
 PROTEIN_TARGET_MAP = {
     "abl1": "abl1", "bcr-abl": "abl1", "bcr_abl": "abl1",
     "egfr": "egfr", "src": "src", "jak2": "jak2", "braf": "braf",
@@ -51,9 +51,7 @@ PROTEIN_TARGET_MAP = {
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # LLM Provider abstraction
-# ══════════════════════════════════════════════════════════════════════════════
 
 class LLMProvider:
     """
@@ -134,9 +132,7 @@ class LLMProvider:
         return ""
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Drug-likeness calculator (RDKit)
-# ══════════════════════════════════════════════════════════════════════════════
 
 def compute_drug_likeness(smiles: str) -> dict:
     """
@@ -195,9 +191,7 @@ def compute_drug_likeness(smiles: str) -> dict:
         return {"valid": False, "error": str(e)}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # PubMed literature fetcher
-# ══════════════════════════════════════════════════════════════════════════════
 
 def fetch_pubmed_context(target_protein: str, max_papers: int = 5) -> str:
     """
@@ -222,9 +216,7 @@ def fetch_pubmed_context(target_protein: str, max_papers: int = 5) -> str:
         return f"PubMed literature not available: {e}"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Main Feedback Agent
-# ══════════════════════════════════════════════════════════════════════════════
 
 class FeedbackAgent:
     """
@@ -278,7 +270,7 @@ class FeedbackAgent:
                 return candidate
         return None
 
-    # ── SMILES → LMDB ─────────────────────────────────────────────────────
+    # SMILES → LMDB 
 
     def _smiles_to_lmdb(self, smiles_list: list[str], output_path: str) -> int:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
@@ -303,7 +295,7 @@ class FeedbackAgent:
         finally:
             os.unlink(tmp)
 
-    # ── DrugCLIP docking ───────────────────────────────────────────────────
+    # DrugCLIP docking
 
     def _run_docking(self, mols_lmdb: str, output_dir: str) -> list[dict]:
         os.makedirs(output_dir, exist_ok=True)
@@ -359,7 +351,7 @@ class FeedbackAgent:
         logger.info("FeedbackAgent: docking complete — %d scores", len(scores))
         return scores
 
-    # ── Drug-likeness ──────────────────────────────────────────────────────
+    # Drug-likeness
 
     def _compute_drug_likeness(self, scores: list[dict]) -> list[dict]:
         """Add Lipinski properties to each docked molecule."""
@@ -369,7 +361,7 @@ class FeedbackAgent:
             enriched.append({**s, "drug_likeness": dl})
         return enriched
 
-    # ── Score analysis ─────────────────────────────────────────────────────
+    # Score analysis
 
     def _analyse(self, enriched: list[dict]) -> dict:
         if not enriched:
@@ -399,7 +391,7 @@ class FeedbackAgent:
             "bottom_binders":   bot,
         }
 
-    # ── LLM feedback generation ────────────────────────────────────────────
+    # LLM feedback generation
 
     def _generate_feedback(self, analysis: dict, pubmed_context: str) -> str:
         system_prompt = """You are an expert medicinal chemist reviewing virtual screening results.
@@ -447,7 +439,7 @@ Please provide your medicinal chemistry feedback covering all three sections."""
 
         return self.llm.chat(system_prompt, user_message, max_tokens=2000)
 
-    # ── Public API ─────────────────────────────────────────────────────────
+    # Public API
 
     def run(self, smiles_list: list[str]) -> str:
         if not smiles_list:
@@ -519,7 +511,7 @@ Question: {question}"""
         return self._docking_results
 
 
-# ── Standalone usage ───────────────────────────────────────────────────────
+# Standalone usage
 
 if __name__ == "__main__":
     import argparse
