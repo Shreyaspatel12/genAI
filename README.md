@@ -266,3 +266,60 @@ Every agent fetches real data from a database first, then passes it to Claude to
 - [PubChem](https://pubchem.ncbi.nlm.nih.gov) — Chemical structure database
 - [PubMed](https://pubmed.ncbi.nlm.nih.gov) — Biomedical literature
 - [ChEMBL](https://www.ebi.ac.uk/chembl) — Bioactivity database
+
+---
+
+## Feedback Agent — DrugCLIP + PubMed + LLM
+
+An autonomous feedback agent that replicates what a medicinal chemist does when reviewing virtual screening results.
+
+### What It Does
+
+1. Takes a list of SMILES strings and a target protein name
+2. Runs DrugCLIP docking on GPU to score every molecule
+3. Computes drug-likeness (Lipinski Rule of Five + Veber criteria) for each molecule
+4. Fetches relevant PubMed literature about the target protein
+5. LLM analyses everything and writes expert-level medicinal chemistry feedback
+6. Handles follow-up clarification questions without re-running docking
+
+### Usage
+
+```bash
+python agents/feedback_agent.py \
+    --smiles_file compounds.txt \
+    --target abl1 \
+    --drugclip_dir ~/data_storage/DrugCLIP \
+    --llm claude        # or: openai, gemini
+```
+
+### Supported LLM Providers
+
+| Provider | Flag | API Key needed |
+|---|---|---|
+| Claude (Anthropic) | `--llm claude` | ANTHROPIC_API_KEY |
+| ChatGPT (OpenAI) | `--llm openai` | OPENAI_API_KEY |
+| Gemini (Google) | `--llm gemini` | GEMINI_API_KEY |
+
+Add keys to your `.env` file.
+
+### Feedback Sections
+
+The agent produces three sections:
+
+**1. Docking Analysis** — which structural features correlate with high scores, why top scorers work, why bottom scorers fail
+
+**2. Drug-likeness Assessment** — Lipinski and Veber evaluation per molecule, flags violations, identifies docking-good but drug-bad candidates
+
+**3. Recommendations** — grounded in PubMed literature, specific structural modifications to improve the next round of design
+
+### Requirements
+
+DrugCLIP must be installed separately in a conda environment:
+```bash
+conda create -n drugclip python=3.10 -y
+conda activate drugclip
+pip install rdkit==2022.9.5 "numpy<2"
+pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128
+```
+
+See DrugCLIP setup instructions for full installation details.
