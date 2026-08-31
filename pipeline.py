@@ -12,6 +12,7 @@ Run:
     python pipeline.py --query "Carboplatin" --pubmed --questions "What is the use of Carboplatin?"
 """
 from __future__ import annotations
+import os
 import argparse
 import logging
 import sys
@@ -29,6 +30,7 @@ from agents.filter          import RelevanceFilterAgent
 from agents.reasoner        import ReasoningAgent
 from agents.dataset_builder import DatasetBuilderAgent
 from tools.models           import RetrievalQuery, DataSource
+from agents.feedback_agent  import FeedbackAgent
 
 GREEN = "\033[92m"; YELLOW = "\033[93m"; BOLD = "\033[1m"; RESET = "\033[0m"
 
@@ -37,7 +39,7 @@ def ok(m):   print(f"  {GREEN}✓{RESET}  {m}")
 def info(m): print(f"  {YELLOW}→{RESET}  {m}")
 
 
-def run_pipeline(query: str, max_results: int, questions: list[str], use_pubmed: bool) -> None:
+def run_pipeline(query: str, max_results: int, questions: list[str], use_pubmed: bool, feedback_target: str = None, smiles_file: str = None, drugclip_dir: str = None) -> None:
 
     # Decide which sources to use
     sources = [DataSource.PUBCHEM]
@@ -164,7 +166,11 @@ def run_pipeline(query: str, max_results: int, questions: list[str], use_pubmed:
                 stop_words = {"compare", "structural", "properties", "motifs",
                               "inhibitors", "between", "versus", "and", "the",
                               "what", "which", "are", "how", "does", "as",
-                              "features", "make", "effective", "present", "in"}
+                              "features", "make", "effective", "present", "in",
+                              "carbon", "chains", "groups", "structures",
+                              "adjacent", "these", "chemical", "long", "any",
+                              "cooh", "groups", "carbonyl", "thioketone",
+                              "sulfonate", "hydroxylamine", "hydroxamic"}
                 for token in tokens:
                     if (token.lower() not in stop_words and
                         len(token) > 4 and
@@ -232,6 +238,36 @@ def run_pipeline(query: str, max_results: int, questions: list[str], use_pubmed:
     print(f"\n{BOLD}  Pipeline complete.{RESET}")
     print(f"  Output: {result['output_path']}\n")
 
+    # ── Step 6: Feedback Agent (optional) ────────────────────────
+    if feedback_target:
+        section("STEP 6 · Feedback Agent")
+        smiles_list = [
+            c.smiles for c in filtered_extraction.compounds
+            if c.smiles
+        ]
+        if smiles_file:
+            info(f"Using SMILES from file: {smiles_file}")
+            agent = FeedbackAgent(
+                target_protein=feedback_target,
+                drugclip_dir=drugclip_dir,
+            )
+            feedback = agent.run_from_file(smiles_file)
+        elif smiles_list:
+            info(f"Using {len(smiles_list)} SMILES from pipeline output")
+            agent = FeedbackAgent(
+                target_protein=feedback_target,
+                drugclip_dir=drugclip_dir,
+            )
+            feedback = agent.run(smiles_list)
+        else:
+            feedback = "No SMILES available for docking."
+
+        print(f"\n{'═'*55}")
+        print("  MEDICINAL CHEMISTRY FEEDBACK")
+        print(f"{'═'*55}")
+        print(feedback)
+        print(f"{'═'*55}\n")
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="ChemAgent — Full Pipeline")
@@ -240,9 +276,16 @@ def parse_args():
     p.add_argument("--pubmed",    action="store_true", help="Also search PubMed papers")
     p.add_argument("--questions", nargs="*", default=[],
                    help='Reasoning questions e.g. "What is similar to aspirin?"')
+    p.add_argument("--target",      default=None,
+                   help="Target protein for DrugCLIP docking e.g. abl1, hdac8, egfr")
+    p.add_argument("--smiles_file", default=None,
+                   help="SMILES file for feedback agent (Mode 2 — manual)")
+    p.add_argument("--drugclip_dir",
+                   default=os.path.expanduser("~/data_storage/DrugCLIP"),
+                   help="Path to DrugCLIP repo on server")
     return p.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    run_pipeline(args.query, args.max, args.questions, args.pubmed)
+    run_pipeline(args.query, args.max, args.questions, args.pubmed, args.target, args.smiles_file, args.drugclip_dir)

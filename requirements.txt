@@ -3,14 +3,18 @@ requests>=2.31
 httpx>=0.27
 python-dotenv>=1.0
 
+# Anthropic
+anthropic>=0.34
+
 # Agent framework
-langchain>=0.3
-langchain-openai>=0.2
 langgraph>=0.2
 
 # Chemistry
 rdkit-pypi>=2022.9
 pubchempy>=1.0
+
+# ChEMBL
+chembl_webresource_client
 
 # Data / validation
 pydantic>=2.0
